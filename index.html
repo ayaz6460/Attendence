@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mark Absentees</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #f1f8ff);
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      max-width: 700px;
+      width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    h1 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+
+    .student-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #fdfdfd;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 10px;
+      transform: scale(1.2);
+      accent-color: #007bff;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    @keyframes fadeIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 Mark Absentees</h1>
+    <input type="date" id="date" />
+    <div id="students" class="student-list">Loading students...</div>
+    <button onclick="submitData()">✅ Submit Absentees</button>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec";
+
+    const studentDiv = document.getElementById("students");
+
+    fetch(scriptURL)
+      .then(res => res.json())
+      .then(data => {
+        studentDiv.innerHTML = "";
+        data.forEach(({ pin, name }) => {
+          const label = document.createElement("label");
+          label.innerHTML = `<input type="checkbox" value="${pin}" /> ${pin} - ${name}`;
+          studentDiv.appendChild(label);
+        });
+      })
+      .catch(err => {
+        studentDiv.innerHTML = "<p style='color:red;'>Failed to load students 😢</p>";
+        console.error(err);
+      });
+
+    function submitData() {
+      const date = document.getElementById("date").value;
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+
+      if (!date || selected.length === 0) {
+        alert("Please select a date and at least one student.");
+        return;
+      }
+
+      fetch(scriptURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, studentPINs: selected })
+      })
+      .then(res => res.json())
+      .then(response => {
+        if (response.success) {
+          alert("✅ Absentees logged successfully!");
+          document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        } else {
+          alert("❌ Error: " + response.error);
+        }
+      })
+      .catch(err => alert("❌ Request failed: " + err));
+    }
+  </script>
+</body>
+</html>
