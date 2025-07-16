@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mark Absentees</title>
   <style>
     body {
@@ -106,11 +106,16 @@
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec";
+    // 📦 This must be your actual Apps Script Web App URL
+    const appsScriptURL = "https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec";
+
+    // 🧑‍🏫 This is your proxy API endpoint hosted on Vercel
+    const proxyURL = "/api/log-absentees";
 
     const studentDiv = document.getElementById("students");
 
-    fetch(scriptURL)
+    // Step 1: Load student list (GET directly from Apps Script)
+    fetch(appsScriptURL)
       .then(res => res.json())
       .then(data => {
         studentDiv.innerHTML = "";
@@ -125,6 +130,7 @@
         console.error(err);
       });
 
+    // Step 2: Submit to proxy (POST via /api/log-absentees)
     function submitData() {
       const date = document.getElementById("date").value;
       const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
@@ -134,7 +140,7 @@
         return;
       }
 
-      fetch(scriptURL, {
+      fetch(proxyURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date, studentPINs: selected })
