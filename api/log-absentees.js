@@ -4,7 +4,7 @@
     }
 
     try {
-      const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec';
+      const googleAppsScriptURL = 'https://script.google.com/macros/s/AKfycbzon1fPlptEirip8R8GGhoDSJaCLuZXpXR4ddmzFAQQyaegM37pfD6AHMjoo0IktslcMA/exec';
 
       // Debug: log incoming request body
       console.log('Incoming request body:', req.body);
