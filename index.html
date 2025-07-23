@@ -131,7 +131,9 @@
         }
         allStudents = data;
         studentDiv.innerHTML = "";
-        data.forEach(({ pin, name }) => {
+        data.forEach(student => {
+          if (!student || typeof student !== 'object' || !('pin' in student) || !('name' in student)) return;
+          const { pin, name } = student;
           const label = document.createElement("label");
           label.innerHTML = `<input type="checkbox" value="${pin}" /> ${pin} - ${name}`;
           studentDiv.appendChild(label);
