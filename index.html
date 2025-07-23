@@ -124,15 +124,19 @@
     fetch(appsScriptURL)
       .then(res => res.json())
       .then(data => {
+        console.log('Student data received:', data);
         if (!Array.isArray(data)) {
-          studentDiv.innerHTML = "<p style='color:red;'>Invalid student data received 😢</p>";
+          studentDiv.innerHTML = `<p style='color:red;'>Invalid student data received 😢<br>Raw: ${JSON.stringify(data)}</p>`;
           allStudents = [];
           return;
         }
         allStudents = data;
         studentDiv.innerHTML = "";
         data.forEach(student => {
-          if (!student || typeof student !== 'object' || !('pin' in student) || !('name' in student)) return;
+          if (!student || typeof student !== 'object' || !('pin' in student) || !('name' in student)) {
+            console.warn('Skipping invalid student entry:', student);
+            return;
+          }
           const { pin, name } = student;
           const label = document.createElement("label");
           label.innerHTML = `<input type="checkbox" value="${pin}" /> ${pin} - ${name}`;
@@ -140,9 +144,9 @@
         });
       })
       .catch(err => {
-        studentDiv.innerHTML = "<p style='color:red;'>Failed to load students 😢</p>";
+        studentDiv.innerHTML = `<p style='color:red;'>Failed to load students 😢<br>${err}</p>`;
         allStudents = [];
-        console.error(err);
+        console.error('Student fetch error:', err);
       });
 
     // Step 2: Submit to proxy (POST via /api/log-absentees)
