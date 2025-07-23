@@ -3,124 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Attendance Marking</title>
+  <title>Mark Absentees</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #f1f8ff);
       padding: 2rem;
-      background-color: #f9f9f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      max-width: 700px;
+      width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
     h1 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 1rem;
+    }
+
+    .student-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 1rem;
+      background: #fdfdfd;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
       color: #333;
     }
-    .student-list {
-      margin-top: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+
+    input[type="checkbox"] {
+      margin-right: 10px;
+      transform: scale(1.2);
+      accent-color: #007bff;
     }
-    label {
-      background: #fff;
-      padding: 0.75rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
+
     button {
-      margin-top: 1.5rem;
-      padding: 0.75rem 1.5rem;
-      background-color: #007bff;
+      background: #007bff;
       color: white;
+      padding: 12px 20px;
+      font-size: 16px;
       border: none;
-      border-radius: 5px;
+      border-radius: 12px;
       cursor: pointer;
-      font-weight: bold;
+      width: 100%;
+      transition: background 0.3s ease;
     }
+
     button:hover {
-      background-color: #0056b3;
+      background: #0056b3;
+    }
+
+    @keyframes fadeIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 1.2rem;
+      }
     }
   </style>
 </head>
 <body>
-
-  <h1>Mark Attendance</h1>
-
-  <label for="date">Date:</label>
-  <input type="date" id="date" readonly />
-
-  <div class="student-list" id="students">
-    <p>Loading student list...</p>
+  <div class="container">
+    <h1>📋 Mark Absentees</h1>
+    <input type="date" id="date" />
+    <div id="students" class="student-list">Loading students...</div>
+    <button onclick="submitData()">✅ Submit Absentees</button>
   </div>
 
-  <button onclick="submitAttendance()">Submit Attendance</button>
-
   <script>
-    const studentsAPI = "/api/getStudents";
-    const submitAPI = "/api/submitAttendance";
+    // 📦 This must be your actual Apps Script Web App URL
+    const appsScriptURL = "https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec";
+
+    // 🧑‍🏫 This is your proxy API endpoint hosted on Vercel
+    const proxyURL = "/api/log-absentees";
+
     const studentDiv = document.getElementById("students");
     const dateInput = document.getElementById("date");
 
-    // Set today's date automatically
-    const today = new Date().toISOString().split("T")[0];
-    dateInput.value = today;
+    // Auto-set today's date
+    dateInput.value = new Date().toISOString().split('T')[0];
 
-    // Fetch student list
     let allStudents = [];
 
-    fetch(studentsAPI)
+    // Step 1: Load student list (GET directly from Apps Script)
+    fetch(appsScriptURL)
       .then(res => res.json())
       .then(data => {
         allStudents = data;
         studentDiv.innerHTML = "";
-        data.forEach(({ roll_number, name }) => {
+        data.forEach(({ pin, name }) => {
           const label = document.createElement("label");
-          label.innerHTML = `
-            <input type="checkbox" value="${roll_number}" />
-            <strong>${roll_number}</strong> - ${name}
-          `;
+          label.innerHTML = `<input type="checkbox" value="${pin}" /> ${pin} - ${name}`;
           studentDiv.appendChild(label);
         });
       })
       .catch(err => {
-        studentDiv.innerHTML = "<p style='color:red;'>Error loading students.</p>";
+        studentDiv.innerHTML = "<p style='color:red;'>Failed to load students 😢</p>";
         console.error(err);
       });
 
-    function submitAttendance() {
-      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    // Step 2: Submit to proxy (POST via /api/log-absentees)
+    function submitData() {
       const date = dateInput.value;
+      const absentPINs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
 
-      if (!date) {
-        alert("Date is required!");
+      if (allStudents.length === 0) {
+        alert("Student list not loaded.");
         return;
       }
 
-      const attendanceData = allStudents.map(student => ({
-        roll_number: student.roll_number,
-        status: selected.includes(student.roll_number) ? "absent" : "present",
-        date: date
+      // Prepare attendance: mark selected as absent, others as present
+      const attendance = allStudents.map(({ pin }) => ({
+        pin,
+        status: absentPINs.includes(pin) ? "absent" : "present"
       }));
 
-      fetch(submitAPI, {
+      fetch(proxyURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records: attendanceData })
+        body: JSON.stringify({ date, attendance })
       })
       .then(res => res.json())
       .then(response => {
         if (response.success) {
-          alert("✅ Attendance submitted!");
+          alert("✅ Attendance logged successfully!");
           document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         } else {
           alert("❌ Error: " + response.error);
         }
       })
-      .catch(err => {
-        alert("❌ Submission failed.");
-        console.error(err);
-      });
+      .catch(err => alert("❌ Request failed: " + err));
     }
   </script>
-
 </body>
 </html>
-
