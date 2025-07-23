@@ -124,6 +124,11 @@
     fetch(appsScriptURL)
       .then(res => res.json())
       .then(data => {
+        if (!Array.isArray(data)) {
+          studentDiv.innerHTML = "<p style='color:red;'>Invalid student data received 😢</p>";
+          allStudents = [];
+          return;
+        }
         allStudents = data;
         studentDiv.innerHTML = "";
         data.forEach(({ pin, name }) => {
@@ -134,6 +139,7 @@
       })
       .catch(err => {
         studentDiv.innerHTML = "<p style='color:red;'>Failed to load students 😢</p>";
+        allStudents = [];
         console.error(err);
       });
 
