@@ -107,73 +107,48 @@
 
   <script>
     // 📦 This must be your actual Apps Script Web App URL
-    const appsScriptURL = "https://script.google.com/macros/s/AKfycbzon1fPlptEirip8R8GGhoDSJaCLuZXpXR4ddmzFAQQyaegM37pfD6AHMjoo0IktslcMA/exec";
+    const appsScriptURL = "https://script.google.com/macros/s/AKfycby9Jw0m4LuAVjcs_9JyDXzBwCjC0h2JkHLLJQW9nHIjlQtEH9S7ITcJY-AUFCUAgfXTLQ/exec";
 
     // 🧑‍🏫 This is your proxy API endpoint hosted on Vercel
     const proxyURL = "/api/log-absentees";
 
     const studentDiv = document.getElementById("students");
-    const dateInput = document.getElementById("date");
-
-    // Auto-set today's date
-    dateInput.value = new Date().toISOString().split('T')[0];
-
-    let allStudents = [];
 
     // Step 1: Load student list (GET directly from Apps Script)
     fetch(appsScriptURL)
       .then(res => res.json())
       .then(data => {
-        console.log('Student data received:', data);
-        if (!Array.isArray(data)) {
-          studentDiv.innerHTML = `<p style='color:red;'>Invalid student data received 😢<br>Raw: ${JSON.stringify(data)}</p>`;
-          allStudents = [];
-          return;
-        }
-        allStudents = data;
         studentDiv.innerHTML = "";
-        data.forEach(student => {
-          if (!student || typeof student !== 'object' || !('pin' in student) || !('name' in student)) {
-            console.warn('Skipping invalid student entry:', student);
-            return;
-          }
-          const { pin, name } = student;
+        data.forEach(({ pin, name }) => {
           const label = document.createElement("label");
           label.innerHTML = `<input type="checkbox" value="${pin}" /> ${pin} - ${name}`;
           studentDiv.appendChild(label);
         });
       })
       .catch(err => {
-        studentDiv.innerHTML = `<p style='color:red;'>Failed to load students 😢<br>${err}</p>`;
-        allStudents = [];
-        console.error('Student fetch error:', err);
+        studentDiv.innerHTML = "<p style='color:red;'>Failed to load students 😢</p>";
+        console.error(err);
       });
 
     // Step 2: Submit to proxy (POST via /api/log-absentees)
     function submitData() {
-      const date = dateInput.value;
-      const absentPINs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+      const date = document.getElementById("date").value;
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
 
-      if (allStudents.length === 0) {
-        alert("Student list not loaded.");
+      if (!date || selected.length === 0) {
+        alert("Please select a date and at least one student.");
         return;
       }
-
-      // Prepare attendance: mark selected as absent, others as present
-      const attendance = allStudents.map(({ pin }) => ({
-        pin,
-        status: absentPINs.includes(pin) ? "absent" : "present"
-      }));
 
       fetch(proxyURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, attendance })
+        body: JSON.stringify({ date, studentPINs: selected })
       })
       .then(res => res.json())
       .then(response => {
         if (response.success) {
-          alert("✅ Attendance logged successfully!");
+          alert("✅ Absentees logged successfully!");
           document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         } else {
           alert("❌ Error: " + response.error);
@@ -184,3 +159,4 @@
   </script>
 </body>
 </html>
+
